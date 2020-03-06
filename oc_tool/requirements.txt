@@ -1,0 +1,7 @@
+numpy
+pandas
+cmocean
+dask
+glob
+toolz
+xarray
