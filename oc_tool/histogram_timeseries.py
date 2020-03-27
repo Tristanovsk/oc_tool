@@ -17,12 +17,13 @@ df['year']=df.index.year
 df['month']=df.index.month
 sns.set(style="white", rc={"axes.facecolor": (0, 0, 0, 0)})
 pal = sns.cubehelix_palette(18, rot=-.25, light=.7)
-g = sns.FacetGrid(df, row="year", hue="year", aspect=15, height=.5, palette="rocket")
+g = sns.FacetGrid(df, row="year", hue="year", aspect=15, height=.5, palette="rocket",xlim=(0,5))
 
 # Draw the densities in a few steps
 g.map(sns.kdeplot, "chl_oci", clip_on=False, shade=True, alpha=1, lw=1.5, bw=.2)
 g.map(sns.kdeplot, "chl_oci", clip_on=False, color="w", lw=2, bw=.2)
 g.map(plt.axhline, y=0, lw=2, clip_on=False)
+
 # Define and use a simple function to label the plot in axes coordinates
 def label(x, color, label):
     ax = plt.gca()
@@ -39,3 +40,5 @@ g.fig.subplots_adjust(hspace=-.25)
 g.set_titles("")
 g.set(yticks=[])
 g.despine(bottom=True, left=True)
+
+g.savefig(fname=file.replace('csv','png'))
