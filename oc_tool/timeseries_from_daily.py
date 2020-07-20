@@ -86,9 +86,9 @@ def df_create(params, stat_params):
 
 
 stat_params = ['ave', 'q25', 'q50', 'q75', 'N']
-for year in range(2002,2020):
+for year in range(2014,2020):
     print(year)
-    files = glob.glob(opj(satdir, str(year), 'A*.nc'))
+    files = glob.glob(opj(satdir, str(year), 'A*reproj.nc'))
     files.sort()
     dfroi1, dfroi2 = df_create(params, stat_params), df_create(params, stat_params)
     bins = ["%.1f" % x for x in np.histogram(0,range=[0,30],bins=100)[1][1:]]

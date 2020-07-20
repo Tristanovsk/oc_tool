@@ -11,40 +11,73 @@ import seaborn as sns
 opj=os.path.join
 projet = '/local/AIX/tristan.harmel/project/ardyna/'
 odir=opj(projet,'satellite/modisa/histo')
-years = range(2002,2020)
+
+years = range(2002,2020)#range(2010,2015) #
+
 N=len(years)
-plt.ioff()
+
+#plt.ioff()
+
 mpl.rcParams.update({'font.size': 16})
-fig, axs = plt.subplots(nrows=N, ncols=1, figsize=(15, N*4))
-fig.subplots_adjust(left=0.1, right=0.9, hspace=.5, wspace=0.29)
-axs=axs.ravel()
+
+
 dftot=[]
 for year in years:
-    file = opj(odir,'histo_roi2_'+str(year)+'.csv')
-    dftot.append(pd.read_csv(file,index_col=1,parse_dates=True))
+    file = opj(odir,'histo_roi1_'+str(year)+'.csv')
+    dftot.append(pd.read_csv(file,index_col=[1],parse_dates=True))
 df = pd.concat(dftot, axis=0)
 
 df['year']=df.index.year
 df['month']=df.index.month
-df['doy']=df.index.dayofyear
+df['day']=df.index.day #ofyear
 
-df=df.set_index(['ID','year','month','doy'])
+df=df.set_index(['ID','year','month','day'])
 df=df.drop(index=6,level=2).drop(index=10,level=2)
 df.columns=df.columns.astype('float')
 df.columns=df.columns.set_names('chl_oci')
+#
+# fig, axs = plt.subplots(nrows=N, ncols=1, figsize=(15, N*4))
+# fig.subplots_adjust(left=0.1, right=0.9, hspace=.5, wspace=0.29)
+# axs=axs.ravel()
+# i=0
+# for y, data in df.groupby('year'):
+#     for g,d in data.iterrows():
+#         Npix =  d.sum()
+#         print(y,g,Npix)
+#         if Npix > 2500:
+#             axs[i].plot(d.index.values,d/Npix,label=g)
+#     axs[i].semilogx()
+#     i+=1
+plt.ioff()
+fig, axs = plt.subplots(nrows=N, ncols=1, figsize=(10, N*1.5))
+fig.subplots_adjust(left=0.3, right=0.9, hspace=-.05, wspace=0.29)
+axs=axs.ravel()
+i=0
+for year, data in df.groupby('year'):
+    for g,d in data.groupby('month').sum().iterrows():
+        Npix =  d.sum()
+        print(year,g,Npix)
+        if Npix > 2500:
+            axs[i].plot(d.index.values,d/Npix,label=g,lw=2.5,alpha=0.7)
+        axs[i].axhline(y=0, lw=2,c='black', clip_on=False)
 
-for g,d in df.groupby('month').sum().iterrows():
-    print(g)
+        axs[i].text(0.0, 0.01, str(year),
+        verticalalignment='bottom', horizontalalignment='right',
+        transform=axs[i].transAxes,
+        color='green', fontsize=22)
 
-
-        axs[i].plot(d.index.values,d,label=g)
-    axs[i].set_title(str(year))
-
-    plt.legend()
-    axs[i].set_xlim([0,10])
+        axs[i].axis('off')
+        plt.legend()
+        axs[i].set_xlim([0,10])
     i+=1
-plt.tight_layout()
+axs[i-1].axis('on')
+axs[i-1].set_frame_on(False)
+axs[i-1].get_xaxis().tick_bottom()
+axs[i-1].yaxis.set_visible(False)
+
+
 plt.savefig('chlor_a_timeseries.pdf')
+plt.savefig('chlor_a_timeseries.png',dpi=300)
 
 df.plot(marker='o', markersize=8, linestyle='-',alpha=0.5, )
 
