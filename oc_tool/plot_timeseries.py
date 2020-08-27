@@ -25,7 +25,7 @@ mpl.rcParams.update({'font.size': 16})
 
 sats = ['modisa', 'modist', 'viirs']
 vars=['chlor_a_p50_q50','chlor_a_p50_ave']
-var=vars[0]
+var=vars[1]
 dftot=[]
 for year in years:
     for sat in sats:
@@ -42,12 +42,18 @@ df['doy']=df.index.dayofyear
 Npix=df.chlor_a_p50_N
 
 # statistics
-mean_ = df.groupby('doy').mean()
-mean_.reset_index(inplace=True)
+df_ = df[(df.chlor_a_p50_N>600) & (df.doy < 268) & (df.year != 2014)]
+df_2014 = df[(df.chlor_a_p50_N>600) & (df.doy < 268) & (df.year == 2014)]
 
+mean_ = df_.groupby('doy').mean()
+mean_.reset_index(inplace=True)
+plt.figure()
 sns.set_style("whitegrid")
-g=sns.relplot(data=mean_[Npix>0],x='doy',y=var,hue="sat",col='year',col_wrap=3,size="chlor_a_p50_N",
-              palette=['darkorange', 'silver', 'gold'],height=3,aspect=2.5)
+g=sns.scatterplot(data=df_2014,x='doy',y=var,hue="sat",size="chlor_a_p50_N",
+              palette=['darkorange', 'silver', 'gold'])
+
+sns.lineplot(data=mean_,x='doy',y=var,ax=g)
+sns.lineplot(data=df_2014,x='doy',y=var,ax=g)
 
 #g.set(yscale="log")
 g.set(ylim=(0., 4))
@@ -58,7 +64,7 @@ g=sns.relplot(data=df[Npix>0],x='doy',y=var,hue="sat",col='year',col_wrap=3,size
 g.set(ylim=(0., 4))
 xformatter = mdates.DateFormatter("%m/%d")
 g.axes[0].xaxis.set_major_formatter(xformatter)
-figfile=opj(odir,'oc_timeseries_roi2_'+var+'.png')
+figfile=opj(odir,'oc_timeseries_r anoi2_'+var+'.png')
 plt.savefig(figfile, dpi=300)
 
 fig, axs = plt.subplots(nrows=N, ncols=1, figsize=(15, N*4))
