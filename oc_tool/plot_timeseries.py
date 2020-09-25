@@ -24,8 +24,6 @@ plt.ioff()
 mpl.rcParams.update({'font.size': 16})
 
 sats = ['modisa', 'modist', 'viirs']
-vars=['chlor_a_p50_q50','chlor_a_p50_ave']
-var=vars[1]
 dftot=[]
 for year in years:
     for sat in sats:
@@ -40,23 +38,40 @@ df['day']=df.index.day #ofyear
 df['doy']=df.index.dayofyear
 #df=df.set_index(['ID','year','month','day'])
 Npix=df.chlor_a_p50_N
+df['Num. of Pixels']=Npix #**0.5
+df.rename(columns={'sat':'Satellite'},inplace=True)
 
 # statistics
-df_ = df[(df.chlor_a_p50_N>600) & (df.doy < 268) & (df.year != 2014)]
-df_2014 = df[(df.chlor_a_p50_N>600) & (df.doy < 268) & (df.year == 2014)]
+df_ = df[(df.chlor_a_p50_q75<2) & (df.chlor_a_p50_N>600) & (df.doy < 260) & (df.year != 2014)]
+df_2014 = df[(df.chlor_a_p50_N>600) & (df.doy < 260) & (df.year == 2014)]
 
-mean_ = df_.groupby('doy').mean()
+mean_ = df_.groupby('doy').median()
+
+#mean_ = mean_.rolling(2).mean()
 mean_.reset_index(inplace=True)
-plt.figure()
-sns.set_style("whitegrid")
-g=sns.scatterplot(data=df_2014,x='doy',y=var,hue="sat",size="chlor_a_p50_N",
-              palette=['darkorange', 'silver', 'gold'])
 
-sns.lineplot(data=mean_,x='doy',y=var,ax=g)
-sns.lineplot(data=df_2014,x='doy',y=var,ax=g)
+vars = ['chlor_a_p50_q50', 'chlor_a_p50_ave']
+var = vars[1]
+plt.figure(figsize=(16,5))
+sns.set_style("whitegrid")
+g=sns.scatterplot(data=df_2014,x='doy',y=var,hue="Satellite",size="Num. of Pixels",
+              palette=['darkorange', 'silver', 'gold'],sizes=(2, 300),alpha=0.7)
+
+g=sns.lineplot(data=mean_,x='doy',y=vars[0],ax=g,color='black')
+g.lines[-1].set_linestyle("--")
+g.fill_between(mean_.doy,mean_.chlor_a_p50_q25,mean_.chlor_a_p50_q75,color='blue',alpha=0.2)#,zorder=0)
+#sns.lineplot(data=df_2014,x='doy',y=var,ax=g)
 
 #g.set(yscale="log")
-g.set(ylim=(0., 4))
+g.set(ylim=(0., 2.5))
+xformatter = mdates.DateFormatter("%m/%d")
+g.axes.xaxis.set_major_formatter(xformatter)
+g.set_xlabel('Date')
+g.set_ylabel('Chlorophyll-a $(mg\ m^{-3})$')
+plt.legend(loc='upper left')
+
+plt.savefig(opj(odir,'oc_timeseries_roi2_stats.pdf'))
+
 
 g=sns.relplot(data=df[Npix>0],x='doy',y=var,hue="sat",col='year',col_wrap=3,size="chlor_a_p50_N",
               palette=['darkorange', 'silver', 'gold'],height=3,aspect=2.5)
@@ -64,8 +79,15 @@ g=sns.relplot(data=df[Npix>0],x='doy',y=var,hue="sat",col='year',col_wrap=3,size
 g.set(ylim=(0., 4))
 xformatter = mdates.DateFormatter("%m/%d")
 g.axes[0].xaxis.set_major_formatter(xformatter)
-figfile=opj(odir,'oc_timeseries_r anoi2_'+var+'.png')
+figfile=opj(odir,'oc_timeseries_roi2_'+var+'.png')
 plt.savefig(figfile, dpi=300)
+
+
+#-------------------------------------------------------------------------------
+#
+#
+#
+#
 
 fig, axs = plt.subplots(nrows=N, ncols=1, figsize=(15, N*4))
 fig.subplots_adjust(left=0.1, right=0.9, hspace=.5, wspace=0.29)
@@ -79,6 +101,8 @@ for y, data in df.groupby('year'):
         Npix =  d.sum()
         print(y,g,Npix)
         if Npix > 2500:
+            #TODO
+            pass
 
     axs[i].semilogx()
     i+=1

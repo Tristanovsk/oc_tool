@@ -65,8 +65,11 @@ ax.coastlines('50m', linewidth=0.5)
 p = ds[param].where(ds[param] > 0).plot(ax=ax, transform=crs, norm=mpl.colors.LogNorm(),
                                         cmap=cmap, cbar_kwargs=dict(pad=.1, aspect=20, shrink=0.9))
 p.set_clim(0.1, 10)
-
-plt.title(basename)
+year,doy=basename.split('_')[5:7]
+doy = doy.split('to')[0]
+date = datetime.datetime.strptime(year+doy, '%Y%j')
+date = date.date().__str__()
+plt.title(date)
 ds.close()
 # plt.suptitle(date)
 
