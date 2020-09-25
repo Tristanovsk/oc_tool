@@ -22,15 +22,14 @@ import satpy
 # begin
 
 opj = os.path.join
-sst=True
-file = sys.argv[1]
-odirfig = sys.argv[2]
-param = sys.argv[3]
-#file='/home/harmel/satellite/modis/sst/L3daily/2014/AQUA_MODIS.20140809.from_L2_SST.nc'
+dir='/DATA/projet/ardyna/fig/figure2/'
+ts_file=opj(dir,'N_deposition_time_series.csv')
+climato_file=opj(dir,'FIREvert_Dianab_August_2011-2016MEAN_NTOTDEPONLY.nc')
+fire_file=opj(dir,'FIREvert_Dianab_August_2014_NTOTDEPONLY.nc')
 
-basename = os.path.basename(file)
+basename = os.path.basename(fire_file)
 
-figfile = opj(odirfig, basename.replace('.nc', '.png'))
+figfile = opj(dir, basename.replace('.nc', '.png'))
 
 crs = ccrs.NearsidePerspective(100, 71)
 land_feat = cpy.feature.NaturalEarthFeature('physical', 'land', '50m',
@@ -40,23 +39,15 @@ extent = [90, 180, 71, 78]
 crs = ccrs.PlateCarree()
 crs1 = ccrs.NorthPolarStereo()
 # crs1 = ccrs.NearsidePerspective(100, 71)
-params = ['chlor_a_mean', 'chlor_a_sigma', 'num_obs']
-params = ['chlor_a_p50_mean', 'chlor_a_p50_sigma', 'num_obs_mean']
-if sst:
-    params = ['sst_mean', 'chlor_a_p50_sigma', 'num_obs_mean']
 
-if not os.path.exists(odirfig):
-    os.makedirs(odirfig)
+params = ['NTOTDEP']
+param=params[0]
 
 # load image data
-ds = xr.open_dataset(file, mask_and_scale=True)  # , engine='h5netcdf')  # ,group='geophysical_data')
-ds = ds.dropna('lon', how='all')
+ds = xr.open_dataset(fire_file, mask_and_scale=True)  # , engine='h5netcdf')  # ,group='geophysical_data')
+climato = xr.open_dataset(climato_file, mask_and_scale=True)
 
-#---------
-# get dayof year of start and end date
-doy_start = pd.to_datetime(ds.start_date).dayofyear
-doy_end = pd.to_datetime(ds.stop_date).dayofyear
-print('start,stop day of year:',doy_start,doy_end)
+
 plt.figure(figsize=(10, 8))
 plt.subplots_adjust(left=0.05, bottom=0.04, right=0.95, top=0.94,
                     wspace=None, hspace=0.25)
@@ -67,53 +58,21 @@ plt.subplots_adjust(left=0.05, bottom=0.04, right=0.95, top=0.94,
 ax = plt.subplot(projection=crs1)
 ax
 ax.set_extent(extent, crs=crs)
-ax.add_feature(land_feat)
+#ax.add_feature(land_feat)
 
 gl = ax.gridlines(draw_labels=True, alpha=0.5, linestyle='--', x_inline=False, y_inline=False)
 gl.xlabels_top = False
 gl.ylabels_right = False
 ax.coastlines('50m', linewidth=0.5)
-if sst:
-    # ---------------------------------------------------
-    # generate SST map
-    # ---------------------------------------------------
-    cmap = plt.cm.nipy_spectral
-    # cmap = mpl.colors.LinearSegmentedColormap.from_list("", ["darkblue","dodgerblue","green","lime","darkorange",'yellow'])
-    cmap = mpl.colors.LinearSegmentedColormap.from_list("", ["slateblue","darkblue","dodgerblue","greenyellow","yellowgreen","darkorange",'yellow'])
-    #cmap = mpl.colors.LinearSegmentedColormap.from_list("", ["darkblue","dodgerblue","slateblue","khaki","goldenrod","darkorange",'yellow'])
-    p = ds[param].where(ds[param] > 0).plot(ax=ax, transform=crs,
-                                            cmap=cmap, cbar_kwargs=dict(pad=.1, aspect=20, shrink=0.9))
-    p.set_clim(-1, 6)
 
-    # ---------------------------------------------------
-    # generate ice concentration ERA data
-    # ---------------------------------------------------
-    file_ice = opj('~/Dropbox/work/projet/ardyna/cams/cams', 'era5_ice_artic_jul_aug_2014.nc')
-    ds_ice = xr.open_dataset(file_ice)
-    # subset
-    ds_ice =ds_ice.sel(latitude=slice(90,70))
-    # daily average
-    ds_ice = ds_ice.groupby('time.dayofyear').mean()
-    # get dates
-    ds_ice = ds_ice.sel(dayofyear=slice(doy_start,doy_end)).mean(dim='dayofyear')
-    # resample
-    new_lon = np.linspace(ds_ice.longitude[0], ds_ice.longitude[-1], ds_ice.dims["longitude"] * 4)
-    new_lat = np.linspace(ds_ice.latitude[0], ds_ice.latitude[-1], ds_ice.dims["latitude"] * 4)
-    ds_ice = ds_ice.interp(latitude=new_lat, longitude=new_lon)
-    # remove data if no ice
-    ds_ice = ds_ice.where(ds_ice.siconc>0.2)
-    ds_ice.siconc.plot(ax=ax, transform=crs,cmap=plt.cm.gist_gray, cbar_kwargs=dict(pad=.1, aspect=20, shrink=0.9))#,zorder=0)
-else:
 
-    cmap = plt.cm.nipy_spectral
-    p = ds[param].where(ds[param] > 0).plot(ax=ax, transform=crs, norm=mpl.colors.LogNorm(),
-                                            cmap=cmap, cbar_kwargs=dict(pad=.1, aspect=20, shrink=0.9))
-    p.set_clim(0.1, 10)
-year,doy=basename.split('_')[5:7]
-doy = doy.split('to')[0]
-date = datetime.datetime.strptime(year+doy, '%Y%j')
-date = date.date().__str__()
-plt.title(date)
+cmap = plt.cm.nipy_spectral
+p = ds[param].where(ds[param] > 0).plot(ax=ax, transform=crs,
+                                        cmap=cmap, cbar_kwargs=dict(pad=.1, aspect=20, shrink=0.9))
+#p.set_clim(0.1, 10)norm=mpl.colors.LogNorm(),
+
+plt.title(basename)
+
 ds.close()
 # plt.suptitle(date)
 
